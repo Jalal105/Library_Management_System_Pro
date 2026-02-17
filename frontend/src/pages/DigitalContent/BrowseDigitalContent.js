@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FiFilter, FiX, FiTrendingUp, FiStar } from 'react-icons/fi';
+import { FiFilter, FiX } from 'react-icons/fi';
 import { ContentCard, LoadingCard } from '../../components/Cards';
 import { digitalContentAPI } from '../../services/api';
 

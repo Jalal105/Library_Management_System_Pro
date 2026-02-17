@@ -6,7 +6,6 @@ import { digitalContentAPI, booksAPI } from '../services/api';
 
 const Home = () => {
   const [books, setBooks] = useState([]);
-  const [content, setContent] = useState([]);
   const [trending, setTrending] = useState([]);
   const [recommended, setRecommended] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,7 +15,7 @@ const Home = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [booksRes, contentRes, trendingRes, recommendedRes] = await Promise.all([
+        const [booksRes, , trendingRes, recommendedRes] = await Promise.all([
           booksAPI.getAllBooks({ limit: 6 }),
           digitalContentAPI.getAllContent({ limit: 6 }),
           digitalContentAPI.getTrending({ limit: 6 }),
@@ -24,7 +23,6 @@ const Home = () => {
         ]);
 
         setBooks(booksRes.data.data);
-        setContent(contentRes.data.data);
         setTrending(trendingRes.data.data);
         setRecommended(recommendedRes.data.data);
       } catch (error) {

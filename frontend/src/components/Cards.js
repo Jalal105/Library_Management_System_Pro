@@ -40,22 +40,22 @@ export const ContentCard = ({ content }) => {
             <p className="text-sm text-gray-600 mb-1">{content.author}</p>
             <p className="text-xs text-gray-500 mb-3">
               <span className="inline-block bg-pink-100 text-pink-800 px-2 py-1 rounded">
-                {content.type}
+                {content.type || 'Unknown'}
               </span>
             </p>
           </div>
           <div className="flex justify-between items-center text-xs text-gray-600 border-t pt-2">
             <div className="flex items-center gap-1">
               <FiEye size={16} />
-              {content.views}
+              {typeof content.views === 'number' ? content.views : 0}
             </div>
             <div className="flex items-center gap-1">
               <FiDownload size={16} />
-              {content.downloads}
+              {typeof content.downloads === 'number' ? content.downloads : 0}
             </div>
             <div className="flex items-center gap-1">
               <FiStar size={16} className="text-yellow-500" />
-              {content.rating.average.toFixed(1)}
+              {(content?.rating?.average ?? 0).toFixed(1)}
             </div>
           </div>
         </div>

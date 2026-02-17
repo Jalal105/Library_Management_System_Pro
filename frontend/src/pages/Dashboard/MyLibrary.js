@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { FiBook, FiX, FiDownload } from 'react-icons/fi';
+import { FiBook } from 'react-icons/fi';
 import useAuthStore from '../../stores/authStore';
 
 const MyLibrary = () => {
-  const { user } = useAuthStore();
+  useAuthStore();
   const [borrowedBooks, setBorrowedBooks] = useState([]);
   const [loading, setLoading] = useState(true);
 

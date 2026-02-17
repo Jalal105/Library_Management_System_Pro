@@ -83,7 +83,7 @@ exports.getStudent = async (req, res) => {
 // @route   POST /api/students/:id/issue-book
 exports.issueBook = async (req, res) => {
   try {
-    const { bookId, dueDate } = req.body;
+    const { bookId, dueDate, durationDays } = req.body;
 
     const student = await Student.findById(req.params.id);
     if (!student) {
@@ -99,10 +99,32 @@ exports.issueBook = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Book is not available' });
     }
 
+    // Determine due date: prefer explicit dueDate, else durationDays, else default 14 days
+    let finalDueDate;
+    const now = Date.now();
+
+    if (dueDate) {
+      finalDueDate = new Date(dueDate);
+      // Validate range (7 - 30 days)
+      const diffDays = Math.ceil((finalDueDate - now) / (1000 * 60 * 60 * 24));
+      if (diffDays < 7 || diffDays > 30) {
+        return res.status(400).json({ success: false, message: 'Due date must be between 7 and 30 days from now' });
+      }
+    } else if (durationDays) {
+      const days = Number(durationDays);
+      if (isNaN(days) || days < 7 || days > 30) {
+        return res.status(400).json({ success: false, message: 'durationDays must be a number between 7 and 30' });
+      }
+      finalDueDate = new Date(now + days * 24 * 60 * 60 * 1000);
+    } else {
+      // default 14 days
+      finalDueDate = new Date(now + 14 * 24 * 60 * 60 * 1000);
+    }
+
     // Add book to borrowed books
     student.borrowedBooks.push({
       bookId,
-      dueDate: dueDate || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days
+      dueDate: finalDueDate,
     });
 
     // Update book quantity

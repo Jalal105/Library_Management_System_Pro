@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { FiUsers, FiBook, FiDownload, FiBarChart2, FiServer, FiHardDrive } from 'react-icons/fi';
+import { FiUsers, FiBook, FiDownload, FiBarChart2, FiHardDrive } from 'react-icons/fi';
 import { toast } from 'react-toastify';
-import { digitalContentAPI, usersAPI } from '../../services/api';
+import { digitalContentAPI } from '../../services/api';
 import useAuthStore from '../../stores/authStore';
 
 const Admin = () => {
@@ -12,7 +12,6 @@ const Admin = () => {
     totalDownloads: 0,
   });
   const [storageInfo, setStorageInfo] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user?.role !== 'admin') {
@@ -21,8 +20,6 @@ const Admin = () => {
 
     const fetchStats = async () => {
       try {
-        setLoading(true);
-        
         // Fetch storage info
         const storageRes = await digitalContentAPI.getStorageInfo();
         setStorageInfo(storageRes.data.data);
@@ -35,8 +32,6 @@ const Admin = () => {
         });
       } catch (error) {
         toast.error('Failed to load admin statistics');
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -136,7 +131,7 @@ const Admin = () => {
       {/* System Actions */}
       <div className="card p-6">
         <h3 className="heading-3 mb-6 flex items-center gap-2">
-          <FiBarChart3 />
+          <FiBarChart2 />
           System Actions
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
