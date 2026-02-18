@@ -9,8 +9,7 @@ const librarianSchema = new mongoose.Schema(
     },
     employeeId: {
       type: String,
-      required: [true, 'Please provide an employee ID'],
-      unique: true,
+      sparse: true,
     },
     department: {
       type: String,

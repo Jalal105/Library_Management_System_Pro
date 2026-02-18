@@ -9,6 +9,7 @@ const BookDetail = () => {
   const navigate = useNavigate();
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [borrowing, setBorrowing] = useState(false);
 
   useEffect(() => {
     const fetchBook = async () => {
@@ -26,6 +27,36 @@ const BookDetail = () => {
 
     fetchBook();
   }, [id, navigate]);
+
+  const handleBorrowBook = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast.warning('Please login to borrow a book');
+      navigate('/login');
+      return;
+    }
+
+    try {
+      setBorrowing(true);
+      const response = await booksAPI.borrowBook(id);
+      
+      if (response.data.success) {
+        toast.success('Book borrowed successfully! Due date: ' + new Date(response.data.data.dueDate).toLocaleDateString());
+        
+        // Update book availability
+        setBook(prevBook => ({
+          ...prevBook,
+          availableQuantity: response.data.data.availableQuantity,
+          isAvailable: response.data.data.availableQuantity > 0,
+        }));
+      }
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to borrow book';
+      toast.error(message);
+    } finally {
+      setBorrowing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -130,11 +161,12 @@ const BookDetail = () => {
           {/* Action Buttons */}
           <div className="flex flex-col md:flex-row gap-4">
             <button
-              disabled={book.availableQuantity === 0}
-              className="btn btn-primary flex-1 py-3 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleBorrowBook}
+              disabled={book.availableQuantity === 0 || borrowing}
+              className="btn btn-primary flex-1 py-3 font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               <FiDownload />
-              {book.availableQuantity > 0 ? 'Borrow Book' : 'Not Available'}
+              {borrowing ? 'Borrowing...' : book.availableQuantity > 0 ? 'Borrow Book' : 'Not Available'}
             </button>
             <button className="btn btn-secondary flex-1 py-3 font-semibold">
               <FiBarChart2 />

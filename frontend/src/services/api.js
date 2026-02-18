@@ -31,8 +31,17 @@ export const booksAPI = {
   getBookById: (id) => api.get(`/books/${id}`),
   searchBooks: (query) => api.get('/books/search', { params: { query } }),
   createBook: (data) => api.post('/books', data),
+  uploadBook: (formData) =>
+    api.post('/books/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  downloadBook: (id) => api.get(`/books/${id}/download`, {
+    responseType: 'blob',
+  }),
   updateBook: (id, data) => api.put(`/books/${id}`, data),
   deleteBook: (id) => api.delete(`/books/${id}`),
+  borrowBook: (id) => api.post(`/books/${id}/borrow`),
+  returnBook: (id) => api.post(`/books/${id}/return`),
 };
 
 // Digital Content API

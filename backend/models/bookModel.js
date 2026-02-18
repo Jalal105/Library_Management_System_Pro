@@ -45,9 +45,28 @@ const bookSchema = new mongoose.Schema(
     image: {
       type: String,
     },
+    // File upload support
+    file: {
+      originalName: String,
+      filename: String,
+      filepath: String,
+      mimeType: String,
+      size: Number, // in bytes
+      uploadDate: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+    fileSize: {
+      type: String, // in MB
+    },
     isAvailable: {
       type: Boolean,
       default: true,
+    },
+    downloads: {
+      type: Number,
+      default: 0,
     },
   },
   { timestamps: true }

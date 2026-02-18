@@ -34,6 +34,20 @@ exports.register = async (req, res) => {
       role: role || 'student',
     });
 
+    // Create student profile if role is student
+    if ((role || 'student') === 'student') {
+      await Student.create({
+        userId: user._id,
+      });
+    }
+
+    // Create librarian profile if role is librarian
+    if (role === 'librarian') {
+      await Librarian.create({
+        userId: user._id,
+      });
+    }
+
     // Generate token
     const token = generateToken(user._id);
 

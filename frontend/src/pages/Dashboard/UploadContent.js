@@ -80,24 +80,25 @@ const UploadContent = () => {
     try {
       setUploading(true);
 
-      const payload = {
-        title: data.title,
-        author: data.author,
-        isbn: data.isbn,
-        description: data.description,
-        category: data.category,
-        quantity: Number(data.quantity) || 1,
-        publicationYear: data.publicationYear || undefined,
-        publisher: data.publisher || undefined,
-      };
+      const payload = new FormData();
+      payload.append('title', data.title);
+      payload.append('author', data.author);
+      payload.append('isbn', data.isbn);
+      payload.append('description', data.description);
+      payload.append('category', data.category);
+      payload.append('quantity', Number(data.quantity) || 1);
+      if (data.publicationYear) payload.append('publicationYear', data.publicationYear);
+      if (data.publisher) payload.append('publisher', data.publisher);
+      if (file) payload.append('file', file);
 
-      await booksAPI.createBook(payload);
+      await booksAPI.uploadBook(payload);
 
-      toast.success('Book created successfully!');
+      toast.success('Book uploaded successfully!');
       reset();
+      setFile(null);
       navigate('/books');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Book creation failed');
+      toast.error(error.response?.data?.message || 'Book upload failed');
     } finally {
       setUploading(false);
     }
@@ -121,46 +122,10 @@ const UploadContent = () => {
 
       {/* Upload Form */}
       <form onSubmit={handleSubmit(mode === 'digital' ? onSubmitDigital : onSubmitBook)} className="card p-8 space-y-6">
-        {/* If mode is digital, show file upload, else show book-specific fields */}
-        {mode === 'digital' && (
-          <>
-            {/* File Upload */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Select File *
-              </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-indigo-500 transition cursor-pointer">
-                <input
-                  type="file"
-                  onChange={handleFileChange}
-                  className="hidden"
-                  id="file-input"
-                  accept=".pdf,.epub,.docx,.doc,.txt,.xlsx,.xls,.jpg,.png,.gif"
-                />
-                <label htmlFor="file-input" className="cursor-pointer">
-                  <FiUpload className="text-4xl text-gray-400 mx-auto mb-2" />
-                  <p className="text-gray-600 font-medium">
-                    {file ? file.name : 'Click to select file or drag and drop'}
-                  </p>
-                  <p className="text-gray-500 text-sm mt-1">
-                    Supported: PDF, EPUB, DOCX, TXT, XLSX, JPG, PNG, GIF (Max 500MB)
-                  </p>
-                </label>
-              </div>
-              {file && (
-                <p className="text-sm text-green-600 mt-2">
-                  ✓ File selected: {(file.size / (1024 * 1024)).toFixed(2)} MB
-                </p>
-              )}
-            </div>
-          </>
-        )}
-
-        {/* Common fields start here */}
         {/* File Upload */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">
-            Select File *
+            Select File {mode === 'digital' && <span className="text-red-500">*</span>}
           </label>
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-indigo-500 transition cursor-pointer">
             <input
@@ -169,6 +134,7 @@ const UploadContent = () => {
               className="hidden"
               id="file-input"
               accept=".pdf,.epub,.docx,.doc,.txt,.xlsx,.xls,.jpg,.png,.gif"
+              required={mode === 'digital'}
             />
             <label htmlFor="file-input" className="cursor-pointer">
               <FiUpload className="text-4xl text-gray-400 mx-auto mb-2" />
@@ -176,7 +142,7 @@ const UploadContent = () => {
                 {file ? file.name : 'Click to select file or drag and drop'}
               </p>
               <p className="text-gray-500 text-sm mt-1">
-                Supported: PDF, EPUB, DOCX, TXT, XLSX, JPG, PNG, GIF (Max 500MB)
+                {mode === 'digital' ? 'Supported: PDF, EPUB, DOCX, TXT, XLSX, JPG, PNG, GIF (Max 500MB)' : 'Optional: Upload book PDF or content file'}
               </p>
             </label>
           </div>
@@ -411,11 +377,11 @@ const UploadContent = () => {
         {/* Submit Button */}
         <button
           type="submit"
-          disabled={uploading}
+          disabled={uploading || (mode === 'digital' && !file)}
           className="btn btn-primary w-full py-3 font-semibold text-lg"
         >
           <FiUpload />
-          {uploading ? (mode === 'digital' ? 'Uploading...' : 'Creating...') : (mode === 'digital' ? 'Upload Content' : 'Create Book')}
+          {uploading ? 'Uploading...' : 'Upload'}
         </button>
       </form>
     </div>

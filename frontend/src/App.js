@@ -16,6 +16,7 @@ import ContentDetail from './pages/DigitalContent/ContentDetail';
 import Search from './pages/Search';
 import Dashboard from './pages/Dashboard/Dashboard';
 import MyLibrary from './pages/Dashboard/MyLibrary';
+import MyDownloads from './pages/Dashboard/MyDownloads';
 import UploadContent from './pages/Dashboard/UploadContent';
 import ManageBooks from './pages/Dashboard/ManageBooks';
 import Admin from './pages/Admin/Admin';

@@ -9,16 +9,13 @@ const studentSchema = new mongoose.Schema(
     },
     rollNumber: {
       type: String,
-      required: [true, 'Please provide a roll number'],
-      unique: true,
+      sparse: true,
     },
     department: {
       type: String,
-      required: [true, 'Please provide a department'],
     },
     semester: {
       type: Number,
-      required: [true, 'Please provide a semester'],
     },
     borrowedBooks: [
       {
