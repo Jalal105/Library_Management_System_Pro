@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { FiEdit, FiTrash2, FiPlus, FiSearch, FiFilter, FiX } from 'react-icons/fi';
+import { FiEdit, FiTrash2, FiPlus, FiSearch, FiX } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { booksAPI } from '../../services/api';
 import useAuthStore from '../../stores/authStore';

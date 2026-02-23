@@ -1,35 +1,67 @@
 import React, { useState, useEffect } from 'react';
-import { FiBook } from 'react-icons/fi';
-import useAuthStore from '../../stores/authStore';
+import { FiBook, FiArrowRight } from 'react-icons/fi';
+import { toast } from 'react-toastify';
+import { authAPI, booksAPI } from '../../services/api';
 
 const MyLibrary = () => {
-  useAuthStore();
   const [borrowedBooks, setBorrowedBooks] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulated data - in real app, fetch from API
-    setBorrowedBooks([
-      {
-        _id: '1',
-        title: 'The Great Gatsby',
-        author: 'F. Scott Fitzgerald',
-        borrowDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-        dueDate: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000),
-        isReturned: false,
-      },
-      {
-        _id: '2',
-        title: 'To Kill a Mockingbird',
-        author: 'Harper Lee',
-        borrowDate: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
-        dueDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-        returnDate: null,
-        isReturned: false,
-      },
-    ]);
-    setLoading(false);
+    const fetchBorrowedBooks = async () => {
+      try {
+        setLoading(true);
+        const response = await authAPI.getMeBorrowedBooks();
+        
+        if (response.data.success) {
+          // Map the response to the format we need, handling populated bookId
+          const books = response.data.data.map(record => ({
+            _id: record._id,
+            bookId: record.bookId?._id || record.bookId,
+            title: record.bookId?.title || 'Unknown',
+            author: record.bookId?.author || 'Unknown',
+            borrowDate: record.borrowDate,
+            dueDate: record.dueDate,
+            isReturned: record.isReturned,
+          }));
+          setBorrowedBooks(books);
+        }
+      } catch (error) {
+        console.error('Error fetching borrowed books:', error);
+        toast.error('Failed to load borrowed books');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBorrowedBooks();
   }, []);
+
+  const handleReturnBook = async (bookId) => {
+    try {
+      const response = await booksAPI.returnBook(bookId);
+      if (response.data.success) {
+        toast.success('Book returned successfully!');
+        // Refresh the list
+        const newResponse = await authAPI.getMeBorrowedBooks();
+        if (newResponse.data.success) {
+          const books = newResponse.data.data.map(record => ({
+            _id: record._id,
+            bookId: record.bookId?._id || record.bookId,
+            title: record.bookId?.title || 'Unknown',
+            author: record.bookId?.author || 'Unknown',
+            borrowDate: record.borrowDate,
+            dueDate: record.dueDate,
+            isReturned: record.isReturned,
+          }));
+          setBorrowedBooks(books);
+        }
+      }
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to return book';
+      toast.error(message);
+    }
+  };
 
   const isOverdue = (dueDate) => new Date() > new Date(dueDate);
   const daysLeft = (dueDate) =>
@@ -80,7 +112,12 @@ const MyLibrary = () => {
                     </p>
                   )}
                 </div>
-                <button className="btn btn-secondary px-4">Return</button>
+                <button 
+                  onClick={() => handleReturnBook(book.bookId)}
+                  className="btn btn-secondary px-4"
+                >
+                  Return
+                </button>
               </div>
             </div>
           ))}

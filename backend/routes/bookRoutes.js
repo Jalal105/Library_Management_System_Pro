@@ -28,8 +28,8 @@ router.post('/upload', protect, isLibrarian, upload.single('file'), uploadBook);
 router.put('/:id', protect, isLibrarian, updateBook);
 router.delete('/:id', protect, isLibrarian, deleteBook);
 
-// Borrow and return routes (student routes)
-router.post('/:id/borrow', protect, borrowBook);
-router.post('/:id/return', protect, returnBook);
+// Borrow and return routes (available for all authenticated users: admin, librarian, student)
+router.post('/:id/borrow', protect, authorize('admin', 'librarian', 'student'), borrowBook);
+router.post('/:id/return', protect, authorize('admin', 'librarian', 'student'), returnBook);
 
 module.exports = router;

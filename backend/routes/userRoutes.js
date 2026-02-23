@@ -4,6 +4,8 @@ const {
   register,
   login,
   getMe,
+  getMeBorrowedBooks,
+  getMeDownloads,
   getAllUsers,
   updateUser,
   deleteUser,
@@ -16,6 +18,8 @@ router.post('/login', login);
 
 // User routes
 router.get('/me', protect, getMe);
+router.get('/me/borrowed-books', protect, getMeBorrowedBooks);
+router.get('/me/downloads', protect, getMeDownloads);
 router.get('/', protect, authorize('admin'), getAllUsers);
 router.put('/:id', protect, updateUser);
 router.delete('/:id', protect, authorize('admin'), deleteUser);

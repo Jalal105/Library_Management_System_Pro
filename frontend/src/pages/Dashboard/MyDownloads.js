@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { FiDownload, FiTrash2 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
-import { digitalContentAPI } from '../../services/api';
-import useAuthStore from '../../stores/authStore';
+import { authAPI, digitalContentAPI } from '../../services/api';
 
 const MyDownloads = () => {
-  const { user } = useAuthStore();
   const [downloads, setDownloads] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -13,37 +11,13 @@ const MyDownloads = () => {
     const fetchDownloads = async () => {
       try {
         setLoading(true);
-        // Simulated data - in real app, fetch from API
-        setDownloads([
-          {
-            _id: '1',
-            title: 'Advanced React Patterns',
-            author: 'Dan Abramov',
-            type: 'PDF',
-            downloadDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-            size: '2.5 MB',
-            category: 'Technology',
-          },
-          {
-            _id: '2',
-            title: 'The JavaScript Way',
-            author: 'Baptiste Pesquet',
-            type: 'PDF',
-            downloadDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-            size: '3.8 MB',
-            category: 'Technology',
-          },
-          {
-            _id: '3',
-            title: 'Web Development Fundamentals',
-            author: 'Sarah Smith',
-            type: 'EPUB',
-            downloadDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-            size: '1.2 MB',
-            category: 'Education',
-          },
-        ]);
+        const response = await authAPI.getMeDownloads();
+        
+        if (response.data.success) {
+          setDownloads(response.data.data);
+        }
       } catch (error) {
+        console.error('Error fetching downloads:', error);
         toast.error('Failed to load downloads');
       } finally {
         setLoading(false);
@@ -110,10 +84,10 @@ const MyDownloads = () => {
                     <h3 className="font-bold text-lg">{download.title}</h3>
                     <p className="text-gray-600">{download.author}</p>
                     <div className="flex gap-4 mt-2 text-sm text-gray-600">
-                      <span>{download.category}</span>
-                      <span>{download.type}</span>
-                      <span>{download.size}</span>
-                      <span>Downloaded: {formatDate(download.downloadDate)}</span>
+                      <span className="capitalize">{download.type || 'Document'}</span>
+                      {download.subject && <span>{download.subject}</span>}
+                      {download.category && <span>{download.category}</span>}
+                      {download.downloadDate && <span>Downloaded: {formatDate(download.downloadDate)}</span>}
                     </div>
                   </div>
                 </div>

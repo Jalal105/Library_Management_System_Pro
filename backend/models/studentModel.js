@@ -6,10 +6,10 @@ const studentSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
+      unique: true,
     },
     rollNumber: {
       type: String,
-      sparse: true,
     },
     department: {
       type: String,

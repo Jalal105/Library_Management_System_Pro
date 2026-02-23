@@ -1,11 +1,36 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiLogOut, FiList, FiDownload, FiUpload, FiSettings } from 'react-icons/fi';
+import { FiLogOut, FiList, FiDownload, FiUpload, FiSettings, FiBook } from 'react-icons/fi';
 import useAuthStore from '../../stores/authStore';
+import { authAPI } from '../../services/api';
 
 const Dashboard = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const [borrowedCount, setBorrowedCount] = useState(0);
+  const [downloadsCount, setDownloadsCount] = useState(0);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const [borrowedRes, downloadsRes] = await Promise.all([
+          authAPI.getMeBorrowedBooks(),
+          authAPI.getMeDownloads(),
+        ]);
+
+        if (borrowedRes.data.success) {
+          setBorrowedCount(borrowedRes.data.data.length);
+        }
+        if (downloadsRes.data.success) {
+          setDownloadsCount(downloadsRes.data.data.length);
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard stats:', error);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -19,6 +44,7 @@ const Dashboard = () => {
       description: 'View your borrowed books and saved items',
       link: '/my-library',
       color: 'from-blue-500 to-blue-600',
+      badge: borrowedCount,
     },
     {
       icon: <FiDownload className="text-3xl" />,
@@ -26,6 +52,7 @@ const Dashboard = () => {
       description: 'Access your downloaded digital content',
       link: '/dashboard/downloads',
       color: 'from-green-500 to-green-600',
+      badge: downloadsCount,
     },
   ];
 
@@ -81,8 +108,13 @@ const Dashboard = () => {
             <Link
               key={item.link}
               to={item.link}
-              className="card group overflow-hidden hover:shadow-xl transition-all"
+              className="card group overflow-hidden hover:shadow-xl transition-all relative"
             >
+              {item.badge > 0 && (
+                <div className="absolute top-4 right-4 bg-red-500 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg">
+                  {item.badge}
+                </div>
+              )}
               <div className={`bg-gradient-to-br ${item.color} p-6 text-white`}>
                 <div className="group-hover:scale-110 transition-transform">
                   {item.icon}

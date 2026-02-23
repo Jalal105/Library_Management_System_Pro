@@ -196,13 +196,13 @@ const Register = () => {
         {/* Terms */}
         <p className="text-center text-xs text-gray-600 mt-6">
           By creating an account, you agree to our{' '}
-          <a href="#" className="text-indigo-600 hover:text-indigo-700">
+          <button type="button" className="text-indigo-600 hover:text-indigo-700">
             Terms of Service
-          </a>{' '}
+          </button>{' '}
           and{' '}
-          <a href="#" className="text-indigo-600 hover:text-indigo-700">
+          <button type="button" className="text-indigo-600 hover:text-indigo-700">
             Privacy Policy
-          </a>
+          </button>
         </p>
       </div>
     </div>

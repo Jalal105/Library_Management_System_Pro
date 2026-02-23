@@ -1,5 +1,4 @@
 const Book = require('../models/bookModel');
-const fs = require('fs');
 
 // @desc    Get all books
 // @route   GET /api/books
@@ -88,87 +87,6 @@ exports.createBook = async (req, res) => {
   }
 };
 
-// @desc    Upload book with file
-// @route   POST /api/books/upload
-exports.uploadBook = async (req, res) => {
-  try {
-    const { title, author, isbn, description, category, quantity, publicationYear, publisher } = req.body;
-
-    // Validation
-    if (!title || !author || !isbn || !category || !quantity) {
-      if (req.file) {
-        fs.unlinkSync(req.file.path);
-      }
-      return res.status(400).json({ success: false, message: 'Please provide all required fields' });
-    }
-
-    // Check if ISBN exists
-    const bookExists = await Book.findOne({ isbn });
-    if (bookExists) {
-      if (req.file) {
-        fs.unlinkSync(req.file.path);
-      }
-      return res.status(400).json({ success: false, message: 'Book with this ISBN already exists' });
-    }
-
-    // Prepare file data if file was uploaded
-    const fileData = req.file ? {
-      originalName: req.file.originalname,
-      filename: req.file.filename,
-      filepath: req.file.path,
-      mimeType: req.file.mimetype,
-      size: req.file.size,
-    } : null;
-
-    const book = await Book.create({
-      title,
-      author,
-      isbn,
-      description,
-      category,
-      quantity,
-      availableQuantity: quantity,
-      publicationYear,
-      publisher,
-      file: fileData,
-      fileSize: req.file ? (req.file.size / (1024 * 1024)).toFixed(2) : null,
-    });
-
-    res.status(201).json({
-      success: true,
-      message: 'Book uploaded successfully',
-      data: book,
-    });
-  } catch (error) {
-    // Delete uploaded file if error occurs
-    if (req.file) {
-      fs.unlinkSync(req.file.path);
-    }
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// @desc    Download book file
-// @route   GET /api/books/:id/download
-exports.downloadBook = async (req, res) => {
-  try {
-    const book = await Book.findById(req.params.id);
-
-    if (!book || !book.file) {
-      return res.status(404).json({ success: false, message: 'Book or file not found' });
-    }
-
-    // Increment download count
-    book.downloads = (book.downloads || 0) + 1;
-    await book.save();
-
-    // Send file for download
-    res.download(book.file.filepath, book.file.originalName);
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
 // @desc    Update book
 // @route   PUT /api/books/:id
 exports.updateBook = async (req, res) => {
@@ -247,13 +165,97 @@ exports.searchBooks = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+// @desc    Upload book with file
+// @route   POST /api/books/upload
+exports.uploadBook = async (req, res) => {
+  try {
+    const { title, author, isbn, description, category, quantity, publicationYear, publisher } = req.body;
 
-// @desc    Borrow/Download book
+    // Validation
+    if (!title || !author || !isbn || !category || !quantity) {
+      if (req.file) {
+        const fs = require('fs');
+        fs.unlinkSync(req.file.path);
+      }
+      return res.status(400).json({ success: false, message: 'Please provide all required fields' });
+    }
+
+    // Check if ISBN exists
+    const bookExists = await Book.findOne({ isbn });
+    if (bookExists) {
+      if (req.file) {
+        const fs = require('fs');
+        fs.unlinkSync(req.file.path);
+      }
+      return res.status(400).json({ success: false, message: 'Book with this ISBN already exists' });
+    }
+
+    const book = await Book.create({
+      title,
+      author,
+      isbn,
+      description,
+      category,
+      quantity,
+      availableQuantity: quantity,
+      publicationYear,
+      publisher,
+      file: req.file ? {
+        originalName: req.file.originalname,
+        filename: req.file.filename,
+        filepath: req.file.path,
+        mimeType: req.file.mimetype,
+        size: req.file.size,
+      } : undefined,
+    });
+
+    res.status(201).json({
+      success: true,
+      data: book,
+    });
+  } catch (error) {
+    if (req.file) {
+      const fs = require('fs');
+      fs.unlinkSync(req.file.path);
+    }
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Download book
+// @route   GET /api/books/:id/download
+exports.downloadBook = async (req, res) => {
+  try {
+    const book = await Book.findById(req.params.id);
+
+    if (!book || !book.file) {
+      return res.status(404).json({ success: false, message: 'Book file not found' });
+    }
+
+    const filePath = book.file.filepath;
+    res.download(filePath, book.file.originalName, (err) => {
+      if (err) {
+        console.error('Download error:', err);
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Borrow book
+// @route   POST /api/books/:id/borrow
+// @desc    Borrow a book (available for all authenticated users: admin, librarian, student)
 // @route   POST /api/books/:id/borrow
 exports.borrowBook = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user._id;
+    const userId = req.user?._id;
+
+    // Validate user authentication
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'User not authenticated' });
+    }
 
     // Find the book
     const book = await Book.findById(id);
@@ -270,20 +272,27 @@ exports.borrowBook = async (req, res) => {
       });
     }
 
-    // Get student or user profile
+    // Get student or user profile (use findOneAndUpdate with upsert to avoid duplicate key error)
     const Student = require('../models/studentModel');
-    let student = await Student.findOne({ userId });
+    let student = await Student.findOneAndUpdate(
+      { userId: userId },
+      {
+        $setOnInsert: {
+          userId: userId,
+          borrowedBooks: [],
+        }
+      },
+      { upsert: true, new: true }
+    );
 
-    // If student profile doesn't exist, create one
-    if (!student) {
-      student = await Student.create({
-        userId: userId,
-      });
+    // Ensure borrowedBooks array exists
+    if (!student.borrowedBooks) {
+      student.borrowedBooks = [];
     }
 
     // Check if user has already borrowed this book
     const alreadyBorrowed = student.borrowedBooks.some(
-      (b) => b.bookId.toString() === id && !b.isReturned
+      (b) => b.bookId && b.bookId.toString() === id && !b.isReturned
     );
 
     if (alreadyBorrowed) {
@@ -297,13 +306,14 @@ exports.borrowBook = async (req, res) => {
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 14); // 14 days borrow period
 
-    student.borrowedBooks.push({
+    const borrowRecord = {
       bookId: id,
       borrowDate: new Date(),
       dueDate: dueDate,
       isReturned: false,
-    });
+    };
 
+    student.borrowedBooks.push(borrowRecord);
     student.totalBooksIssued = (student.totalBooksIssued || 0) + 1;
 
     // Decrease available quantity
@@ -324,22 +334,28 @@ exports.borrowBook = async (req, res) => {
           title: book.title,
           author: book.author,
         },
-        borrowDate: new Date(),
-        dueDate: dueDate,
+        borrowDate: borrowRecord.borrowDate,
+        dueDate: borrowRecord.dueDate,
         availableQuantity: book.availableQuantity,
       },
     });
   } catch (error) {
+    console.error('Borrow book error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Return book
+// @desc    Return a borrowed book (available for all authenticated users: admin, librarian, student)
 // @route   POST /api/books/:id/return
 exports.returnBook = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user._id;
+    const userId = req.user?._id;
+
+    // Validate user authentication
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'User not authenticated' });
+    }
 
     const Student = require('../models/studentModel');
     const student = await Student.findOne({ userId });
@@ -350,11 +366,11 @@ exports.returnBook = async (req, res) => {
 
     // Find the borrowed book
     const borrowedBook = student.borrowedBooks.find(
-      (b) => b.bookId.toString() === id && !b.isReturned
+      (b) => b.bookId && b.bookId.toString() === id && !b.isReturned
     );
 
     if (!borrowedBook) {
-      return res.status(404).json({ success: false, message: 'Borrowed book not found' });
+      return res.status(404).json({ success: false, message: 'Borrowed book not found in your records' });
     }
 
     // Mark as returned
@@ -373,6 +389,10 @@ exports.returnBook = async (req, res) => {
 
     // Increase available quantity
     const book = await Book.findById(id);
+    if (!book) {
+      return res.status(404).json({ success: false, message: 'Book not found' });
+    }
+
     book.availableQuantity += 1;
     if (book.isAvailable === false) {
       book.isAvailable = true;
@@ -391,6 +411,7 @@ exports.returnBook = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error('Return book error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

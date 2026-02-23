@@ -34,20 +34,6 @@ exports.register = async (req, res) => {
       role: role || 'student',
     });
 
-    // Create student profile if role is student
-    if ((role || 'student') === 'student') {
-      await Student.create({
-        userId: user._id,
-      });
-    }
-
-    // Create librarian profile if role is librarian
-    if (role === 'librarian') {
-      await Librarian.create({
-        userId: user._id,
-      });
-    }
-
     // Generate token
     const token = generateToken(user._id);
 
@@ -116,6 +102,70 @@ exports.getMe = async (req, res) => {
     res.status(200).json({
       success: true,
       user,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Get current user's borrowed books
+// @route   GET /api/auth/me/borrowed-books
+exports.getMeBorrowedBooks = async (req, res) => {
+  try {
+    const student = await Student.findOne({ userId: req.user.id })
+      .populate({
+        path: 'borrowedBooks.bookId',
+        select: 'title author category isbn publisher',
+      });
+
+    if (!student) {
+      return res.status(200).json({
+        success: true,
+        data: [],
+      });
+    }
+
+    // Filter only unreturned books
+    const borrowedBooks = student.borrowedBooks.filter(b => !b.isReturned);
+
+    res.status(200).json({
+      success: true,
+      data: borrowedBooks,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Get current user's downloaded content
+// @route   GET /api/auth/me/downloads
+exports.getMeDownloads = async (req, res) => {
+  try {
+    const DigitalContent = require('../models/digitalContentModel');
+    
+    const downloads = await DigitalContent.find({
+      'downloadedBy.userId': req.user.id,
+    }).select('title author type category subject downloadedBy');
+
+    // Map to show only user's download info
+    const userDownloads = downloads.map(content => {
+      const userDownload = content.downloadedBy.find(
+        d => d.userId.toString() === req.user.id.toString()
+      );
+      return {
+        _id: content._id,
+        title: content.title,
+        author: content.author,
+        type: content.type,
+        category: content.category,
+        subject: content.subject,
+        downloadDate: userDownload?.downloadDate,
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      data: userDownloads,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

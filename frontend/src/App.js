@@ -26,7 +26,7 @@ function App() {
 
   useEffect(() => {
     checkAuth();
-  }, []);
+  }, [checkAuth]);
 
   return (
     <BrowserRouter>
@@ -58,6 +58,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <MyLibrary />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/dashboard/downloads"
+              element={
+                <PrivateRoute>
+                  <MyDownloads />
                 </PrivateRoute>
               }
             />
