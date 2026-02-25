@@ -114,8 +114,8 @@ const UploadContent = () => {
             <p className="text-gray-600">{mode === 'digital' ? 'Add eBooks, journals, papers, and more to the library' : 'Add a physical/book record to the library catalog'}</p>
           </div>
           <div className="flex gap-2">
-            <button type="button" onClick={() => setMode('digital')} className={`btn ${mode==='digital' ? 'btn-primary' : 'btn-secondary'}`}>Digital</button>
-            <button type="button" onClick={() => setMode('book')} className={`btn ${mode==='book' ? 'btn-primary' : 'btn-secondary'}`}>Book</button>
+            <button type="button" onClick={() => setMode('digital')} className={`btn ${mode === 'digital' ? 'btn-primary' : 'btn-secondary'}`}>Digital</button>
+            <button type="button" onClick={() => setMode('book')} className={`btn ${mode === 'book' ? 'btn-primary' : 'btn-secondary'}`}>Book</button>
           </div>
         </div>
       </div>

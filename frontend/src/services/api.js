@@ -33,6 +33,10 @@ export const booksAPI = {
   getBookById: (id) => api.get(`/books/${id}`),
   searchBooks: (query) => api.get('/books/search', { params: { query } }),
   createBook: (data) => api.post('/books', data),
+  uploadBook: (formData) =>
+    api.post('/books/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
   updateBook: (id, data) => api.put(`/books/${id}`, data),
   deleteBook: (id) => api.delete(`/books/${id}`),
   borrowBook: (id) => api.post(`/books/${id}/borrow`),
