@@ -1,0 +1,16 @@
+{
+    "name": "library-management-system-pro",
+    "version": "1.0.0",
+    "description": "Library Management System Pro",
+    "scripts": {
+        "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+        "backend": "cd backend && npm run dev",
+        "frontend": "cd frontend && npm start",
+        "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+        "build": "cd frontend && npm run build",
+        "start": "cd backend && npm start"
+    },
+    "devDependencies": {
+        "concurrently": "^7.6.0"
+    }
+}

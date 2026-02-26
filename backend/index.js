@@ -1,18 +1,45 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const compression = require('compression');
+const morgan = require('morgan');
+const path = require('path');
 require('dotenv').config();
 const connectDB = require('./config/db');
 
 // Initialize app
 const app = express();
 
+// Trust proxy for production environments like Heroku/Vercel
+app.set('trust proxy', 1);
+
 // Connect to database
 connectDB();
 
 // Middleware
+app.use(helmet({
+  crossOriginResourcePolicy: false, // Allow images to be loaded across origins
+}));
+app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
+
+// Logging
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+} else {
+  app.use(morgan('combined'));
+}
+
+// CORS configuration
+const corsOptions = {
+  origin: process.env.CLIENT_URL || '*',
+  optionsSuccessStatus: 200,
+};
+app.use(cors(corsOptions));
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 app.use('/api/auth', require('./routes/userRoutes'));
@@ -21,49 +48,31 @@ app.use('/api/students', require('./routes/studentRoutes'));
 app.use('/api/books', require('./routes/bookRoutes'));
 app.use('/api/digital-content', require('./routes/digitalContentRoutes'));
 
-// Basic route
-app.get('/', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Library Management System API',
-    version: '1.0.0',
-    endpoints: {
-      auth: {
-        register: 'POST /api/auth/register',
-        login: 'POST /api/auth/login',
-        getProfile: 'GET /api/auth/me',
-      },
-      users: {
-        getAll: 'GET /api/users',
-        getById: 'GET /api/users/:id',
-        update: 'PUT /api/users/:id',
-        delete: 'DELETE /api/users/:id',
-      },
-      books: {
-        getAll: 'GET /api/books',
-        getById: 'GET /api/books/:id',
-        search: 'GET /api/books/search?query=keyword',
-        create: 'POST /api/books',
-        update: 'PUT /api/books/:id',
-        delete: 'DELETE /api/books/:id',
-      },
-      digitalContent: {
-        browse: 'GET /api/digital-content',
-        search: 'GET /api/digital-content/search?query=keyword',
-        getById: 'GET /api/digital-content/:id',
-        trending: 'GET /api/digital-content/trending',
-        recommended: 'GET /api/digital-content/recommended',
-        browseCategory: 'GET /api/digital-content/browse/category/:category',
-        download: 'GET /api/digital-content/:id/download',
-        upload: 'POST /api/digital-content/upload',
-        update: 'PUT /api/digital-content/:id',
-        delete: 'DELETE /api/digital-content/:id',
-        addReview: 'POST /api/digital-content/:id/review',
-        storageInfo: 'GET /api/digital-content/storage/info',
-      },
-    },
+// Serve Frontend in Production
+if (process.env.NODE_ENV === 'production') {
+  // Set build folder as static
+  const frontendBuildPath = path.join(__dirname, '../frontend/build');
+  app.use(express.static(frontendBuildPath));
+
+  // Any other route should serve the index.html from frontend/build
+  app.get('*', (req, res, next) => {
+    // Skip API routes
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.resolve(__dirname, '../frontend', 'build', 'index.html'));
   });
-});
+} else {
+  // Basic route for development
+  app.get('/', (req, res) => {
+    res.json({
+      success: true,
+      message: 'Library Management System API',
+      version: '1.0.0',
+      status: 'Running (Development)',
+    });
+  });
+}
+
+
 
 // Error handling middleware
 app.use((error, req, res, next) => {
@@ -75,11 +84,14 @@ app.use((error, req, res, next) => {
     });
   }
 
+  // Log error for debugging but don't expose stack trace in production
   console.error('Error:', error);
-  res.status(500).json({
+
+  const statusCode = error.statusCode || 500;
+  res.status(statusCode).json({
     success: false,
-    message: 'An error occurred',
-    error: error.message,
+    message: error.message || 'An internal server error occurred',
+    // stack: process.env.NODE_ENV === 'production' ? null : error.stack,
   });
 });
 
@@ -99,3 +111,4 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+
